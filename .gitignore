@@ -1,0 +1,19 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+
+# Flutter
+flutter_app/build/
+flutter_app/.dart_tool/
+
+# ML
+models/trained/
+datasets/raw/
+
+# macOS
+.DS_Store
