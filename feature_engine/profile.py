@@ -1,214 +1,115 @@
 """
 GladiatorAI Profile Engine
 
-Builds a fighter's statistical profile using ONLY
-information available before the snapshot date.
+Builds a complete PreFightProfile using
+all Feature Engineering calculators.
+
+This class is the public entry point for
+creating fighter profiles.
 """
+
+from __future__ import annotations
 
 import pandas as pd
 
 from feature_engine.models import PreFightProfile
 
 from feature_engine.calculators import (
-    calculate_record,
-    calculate_current_win_streak,
-    calculate_current_lose_streak,
-    calculate_finish_stats,
-    calculate_average_fight_time,
-    calculate_average_sig_strikes,
-    calculate_average_takedowns,
-    calculate_average_submissions,
-    calculate_experience_score,
-    calculate_momentum_score
+    RecordEngine,
+    PhysicalEngine,
+    ActivityEngine,
+    MomentumEngine,
+    FinishingEngine,
+    StrikingEngine,
+    GrapplingEngine,
+    DurabilityEngine,
 )
 
 
 class ProfileEngine:
-
     """
-    Orchestrates GladiatorAI feature calculators
-    and assembles the final PreFightProfile.
+    Builds a complete fighter profile
+    immediately before a given fight.
+
+    This class orchestrates all
+    calculator engines.
     """
 
-    def build_profile(
+    def __init__(self):
+
+        self.record_engine = RecordEngine()
+
+        self.physical_engine = PhysicalEngine()
+
+        self.activity_engine = ActivityEngine()
+
+        self.momentum_engine = MomentumEngine()
+
+        self.finishing_engine = FinishingEngine()
+
+        self.striking_engine = StrikingEngine()
+
+        self.grappling_engine = GrapplingEngine()
+
+        self.durability_engine = DurabilityEngine()
+
+    def build(
         self,
         history: pd.DataFrame,
         fighter: str,
         snapshot_date
     ) -> PreFightProfile:
 
-        snapshot_date = pd.to_datetime(
-            snapshot_date
-        )
+        snapshot_date = pd.to_datetime(snapshot_date)
 
-        # ==========================================
-        # SAFETY CHECK
-        # ==========================================
-
-        history = history.copy()
-
-        history["date"] = pd.to_datetime(
-            history["date"]
-        )
-
-        # Prevent future information leaking
-        # into this fighter profile.
-
-        history = history[
-            history["date"] < snapshot_date
-        ]
-
-        # ==========================================
-        # RECORD
-        # ==========================================
-
-        record = calculate_record(
-            history,
-            fighter
-        )
-
-        # ==========================================
-        # STREAKS
-        # ==========================================
-
-        win_streak = calculate_current_win_streak(
-            history,
-            fighter
-        )
-
-        lose_streak = calculate_current_lose_streak(
-            history,
-            fighter
-        )
-
-        # ==========================================
-        # FINISHING
-        # ==========================================
-
-        finish_stats = calculate_finish_stats(
-            history,
-            fighter
-        )
-
-        # ==========================================
-        # PERFORMANCE
-        # ==========================================
-
-        average_fight_time = (
-            calculate_average_fight_time(
-                history
-            )
-        )
-
-        average_sig_strikes = (
-            calculate_average_sig_strikes(
-                history,
-                fighter
-            )
-        )
-
-        average_takedowns = (
-            calculate_average_takedowns(
-                history,
-                fighter
-            )
-        )
-
-        average_submissions = (
-            calculate_average_submissions(
-                history,
-                fighter
-            )
-        )
-
-        # ==========================================
-        # EXPERIENCE
-        # ==========================================
-
-        experience_score = (
-            calculate_experience_score(
-                record
-            )
-        )
-
-        # ==========================================
-        # MOMENTUM
-        # ==========================================
-
-        momentum_score = (
-            calculate_momentum_score(
-                win_streak,
-                lose_streak
-            )
-        )
-
-        # ==========================================
-        # FINAL PROFILE
-        # ==========================================
-
-        return PreFightProfile(
+        profile = PreFightProfile(
 
             fighter=fighter,
 
-            snapshot_date=snapshot_date,
-
-            total_fights=record.total_fights,
-
-            wins=record.wins,
-
-            losses=record.losses,
-
-            draws=record.draws,
-
-            no_contests=record.no_contests,
-
-            win_rate=record.win_rate,
-
-            current_win_streak=win_streak,
-
-            current_lose_streak=lose_streak,
-
-            ko_wins=finish_stats["ko_wins"],
-
-            submission_wins=(
-                finish_stats["submission_wins"]
-            ),
-
-            decision_wins=(
-                finish_stats["decision_wins"]
-            ),
-
-            ko_rate=finish_stats["ko_rate"],
-
-            submission_rate=(
-                finish_stats["submission_rate"]
-            ),
-
-            decision_rate=(
-                finish_stats["decision_rate"]
-            ),
-
-            average_fight_time=(
-                average_fight_time
-            ),
-
-            average_sig_strikes=(
-                average_sig_strikes
-            ),
-
-            average_takedowns=(
-                average_takedowns
-            ),
-
-            average_submissions=(
-                average_submissions
-            ),
-
-            experience_score=(
-                experience_score
-            ),
-
-            momentum_score=(
-                momentum_score
-            )
+            snapshot_date=snapshot_date
         )
+
+        # ---------------------------------
+        # Feature Groups
+        # ---------------------------------
+
+        profile.record = self.record_engine.build(
+            history,
+            fighter
+        )
+
+        profile.physical = self.physical_engine.build(
+            history,
+            fighter
+        )
+
+        profile.activity = self.activity_engine.build(
+            history,
+            snapshot_date
+        )
+
+        profile.momentum = self.momentum_engine.build(
+            history,
+            fighter
+        )
+
+        profile.finishing = self.finishing_engine.build(
+            history,
+            fighter
+        )
+
+        profile.striking = self.striking_engine.build(
+            history,
+            fighter
+        )
+
+        profile.grappling = self.grappling_engine.build(
+            history,
+            fighter
+        )
+
+        profile.durability = self.durability_engine.build(
+            history
+        )
+
+        return profile

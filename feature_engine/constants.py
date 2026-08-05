@@ -18,6 +18,9 @@ WINNER = "Winner"
 # Date
 DATE = "date"
 
+#
+FINISH = "finish"
+
 # Physical Attributes
 R_AGE = "R_age"
 B_AGE = "B_age"
@@ -58,3 +61,7 @@ B_WIN_STREAK = "B_current_win_streak"
 
 R_LOSE_STREAK = "R_current_lose_streak"
 B_LOSE_STREAK = "B_current_lose_streak"
+
+
+# Total Fight time 
+TOTAL_FIGHT_TIME = "total_fight_time_secs"
