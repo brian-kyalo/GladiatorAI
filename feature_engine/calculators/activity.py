@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import pandas as pd
 
+from feature_engine.constants import DATE
 from feature_engine.models import ActivityStats
 
 
@@ -32,17 +33,18 @@ class ActivityEngine:
         snapshot_date
     ) -> ActivityStats:
 
-        snapshot_date = pd.to_datetime(snapshot_date)
 
         if history.empty:
-
             return ActivityStats()
+
+        snapshot_date = pd.to_datetime(snapshot_date)
+
 
         # -----------------------------
         # Days Since Last Fight
         # -----------------------------
 
-        latest_fight = history.iloc[0]["date"]
+        latest_fight = history.iloc[0][DATE]
 
         days_since_last_fight = (
 
@@ -67,7 +69,7 @@ class ActivityEngine:
         fights_last_year = len(
 
             history[
-                history["date"] >= one_year_ago
+                history[DATE] >= one_year_ago
             ]
 
         )

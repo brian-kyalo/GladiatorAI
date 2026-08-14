@@ -17,8 +17,6 @@ from __future__ import annotations
 import pandas as pd
 
 from feature_engine.constants import (
-    R_FIGHTER,
-    B_FIGHTER,
     R_TD,
     B_TD,
     R_TD_ACC,
@@ -28,6 +26,11 @@ from feature_engine.constants import (
 )
 
 from feature_engine.models import GrapplingStats
+
+from feature_engine.core import (
+    latest_snapshot,
+    safe_float,
+)
 
 
 class GrapplingEngine:
@@ -45,62 +48,42 @@ class GrapplingEngine:
         if history.empty:
             return GrapplingStats()
 
-        latest = history.iloc[0]
+        latest, corner = latest_snapshot(
+            history,
+            fighter
+        )
 
-        if latest[R_FIGHTER] == fighter:
+        if corner == "Red":
+            average_takedowns = latest[R_TD]
 
-            average_takedowns = latest.get(
-                R_TD,
-                0
-            )
+            takedown_accuracy = latest[R_TD_ACC]
 
-            takedown_accuracy = latest.get(
-                R_TD_ACC,
-                0
-            )
-
-            average_submission_attempts = latest.get(
-                R_SUB,
-                0
-            )
+            average_submission_attempts = latest[R_SUB]
 
         else:
 
-            average_takedowns = latest.get(
-                B_TD,
-                0
-            )
+            average_takedowns = latest[
+                B_TD ]
 
-            takedown_accuracy = latest.get(
-                B_TD_ACC,
-                0
-            )
+            takedown_accuracy = latest[
+                B_TD_ACC ]
 
-            average_submission_attempts = latest.get(
-                B_SUB,
-                0
-            )
+            average_submission_attempts = latest[
+                B_SUB ]
 
         return GrapplingStats(
 
-            average_takedowns=self._safe(
+            average_takedowns=safe_float(
                 average_takedowns
             ),
 
-            takedown_accuracy=self._safe(
+            takedown_accuracy=safe_float(
                 takedown_accuracy
             ),
 
-            average_submission_attempts=self._safe(
+            average_submission_attempts=safe_float(
                 average_submission_attempts
             )
         )
 
-    # ------------------------------------------
-
-    def _safe(self, value):
-
-        if pd.isna(value):
-            return 0.0
-
-        return float(value)
+   

@@ -1,8 +1,8 @@
 """
 GladiatorAI Momentum Engine
 
-Measures a fighter's recent form
-before a snapshot date.
+Calculates a fighter's recent form
+immediately before a specified snapshot date.
 
 Features
 --------
@@ -16,24 +16,16 @@ from __future__ import annotations
 
 import pandas as pd
 
-from feature_engine.constants import (
-    R_FIGHTER,
-    B_FIGHTER,
-    WINNER,
-)
-
 from feature_engine.models import MomentumStats
-
-
 from feature_engine.core import fight_result
 
 
 class MomentumEngine:
     """
-    Calculates recent performance.
+    Calculates momentum-related features.
 
-    The supplied history must already
-    be sorted from newest to oldest.
+    The supplied history must already be
+    sorted from newest to oldest.
     """
 
     def build(
@@ -41,6 +33,9 @@ class MomentumEngine:
         history: pd.DataFrame,
         fighter: str
     ) -> MomentumStats:
+        """
+        Builds the fighter's momentum profile.
+        """
 
         if history.empty:
             return MomentumStats()
@@ -56,7 +51,7 @@ class MomentumEngine:
 
         last_five_rate = self._last_five(results)
 
-        momentum = float(
+        momentum_score = float(
             win_streak - lose_streak
         )
 
@@ -71,90 +66,98 @@ class MomentumEngine:
                 3
             ),
 
-            momentum_score=momentum
+            momentum_score=momentum_score
         )
 
-    # ======================================
+    # =====================================================
     # PRIVATE HELPERS
-    # ======================================
+    # =====================================================
 
     def _results(
         self,
-        history,
-        fighter
-    ):
+        history: pd.DataFrame,
+        fighter: str
+    ) -> list[str]:
         """
-        Converts every fight into
+        Converts every historical fight into one of:
 
         WIN
-
         LOSS
-
         DRAW
-
         NC
+
+        The returned list is ordered from
+        newest fight to oldest fight.
         """
 
-        output = []
+        results = []
 
         for _, fight in history.iterrows():
 
-            output.append(
+            results.append(
+
                 fight_result(
                     fight,
                     fighter
                 )
+
             )
-        return output
+
+        return results
 
     def _win_streak(
         self,
-        results
-    ):
+        results: list[str]
+    ) -> int:
+        """
+        Counts consecutive wins starting
+        from the fighter's most recent fight.
+        """
 
         streak = 0
 
         for result in results:
 
-            if result == "WIN":
-
-                streak += 1
-
-            else:
-
+            if result != "WIN":
                 break
+
+            streak += 1
 
         return streak
 
     def _lose_streak(
         self,
-        results
-    ):
+        results: list[str]
+    ) -> int:
+        """
+        Counts consecutive losses starting
+        from the fighter's most recent fight.
+        """
 
         streak = 0
 
         for result in results:
 
-            if result == "LOSS":
-
-                streak += 1
-
-            else:
-
+            if result != "LOSS":
                 break
+
+            streak += 1
 
         return streak
 
     def _last_five(
         self,
-        results
-    ):
+        results: list[str]
+    ) -> float:
+        """
+        Calculates the win percentage over
+        the fighter's five most recent fights.
+        """
 
         recent = results[:5]
 
-        if len(recent) == 0:
-
-            return 0
+        if not recent:
+            return 0.0
 
         wins = recent.count("WIN")
 
