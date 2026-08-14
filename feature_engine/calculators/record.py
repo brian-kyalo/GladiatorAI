@@ -2,54 +2,29 @@
 GladiatorAI Record Engine
 
 Builds a fighter's professional record
-using ONLY fights that occurred before
+using only fights that occurred before
 the supplied snapshot date.
-
-Author:
-GladiatorAI
 
 Design Principles
 -----------------
-1. One class = one responsibility.
+1. One engine = one responsibility.
 2. Pure calculations.
-3. No printing.
-4. No notebook code.
-5. No side effects.
+3. No side effects.
+4. Returns a typed RecordStats object.
 """
 
 from __future__ import annotations
 
 import pandas as pd
 
-from feature_engine.constants import (
-    R_FIGHTER,
-    B_FIGHTER,
-    WINNER,
-)
-
 from feature_engine.models import RecordStats
-
 from feature_engine.core import fight_result
 
 
 class RecordEngine:
     """
-    Calculates a fighter's career record.
-
-    Parameters
-    ----------
-    history : DataFrame
-
-        Historical fights already filtered
-        by HistoryEngine.
-
-    fighter : str
-
-        Fighter whose record should be built.
-
-    Returns
-    -------
-    RecordStats
+    Calculates a fighter's professional record
+    from historical fight outcomes.
     """
 
     def build(
@@ -57,6 +32,12 @@ class RecordEngine:
         history: pd.DataFrame,
         fighter: str
     ) -> RecordStats:
+        """
+        Builds the fighter's career record.
+        """
+
+        if history.empty:
+            return RecordStats()
 
         wins = 0
         losses = 0
@@ -71,30 +52,35 @@ class RecordEngine:
             )
 
             if result == "WIN":
+
                 wins += 1
 
             elif result == "LOSS":
+
                 losses += 1
 
             elif result == "DRAW":
+
                 draws += 1
 
             else:
+
                 no_contests += 1
 
         total_fights = (
-            wins
-            + losses
-            + draws
-            + no_contests
+            wins +
+            losses +
+            draws +
+            no_contests
         )
 
-        decisive = wins + losses
+        decisive_fights = wins + losses
 
-        if decisive == 0:
-            win_rate = 0.0
-        else:
-            win_rate = wins / decisive
+        win_rate = (
+            wins / decisive_fights
+            if decisive_fights
+            else 0.0
+        )
 
         return RecordStats(
 

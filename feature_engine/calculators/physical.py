@@ -19,6 +19,11 @@ from feature_engine.constants import *
 
 from feature_engine.models import PhysicalStats
 
+from feature_engine.core import (
+    latest_snapshot,
+    safe_float,
+)
+
 
 class PhysicalEngine:
     """
@@ -41,45 +46,32 @@ class PhysicalEngine:
 
             return PhysicalStats()
 
-        latest = history.sort_values(
+        latest, corner = latest_snapshot(
+            history,
+            fighter
+        )
 
-            "date",
+        if corner == "Red":
 
-            ascending=False
+            age = latest[R_AGE]
 
-        ).iloc[0]
+            height = latest[R_HEIGHT]
 
-        if latest[R_FIGHTER] == fighter:
-
-            age = latest.get(R_AGE, 0)
-
-            height = latest.get(R_HEIGHT, 0)
-
-            reach = latest.get(R_REACH, 0)
+            reach = latest[R_REACH]
 
         else:
 
-            age = latest.get(B_AGE, 0)
+            age = latest[B_AGE]
 
-            height = latest.get(B_HEIGHT, 0)
+            height = latest[B_HEIGHT]
 
-            reach = latest.get(B_REACH, 0)
+            reach = latest[B_REACH]
 
         return PhysicalStats(
 
-            age=self._safe(age),
+            age=safe_float(age),
 
-            height=self._safe(height),
+            height=safe_float(height),
 
-            reach=self._safe(reach)
+            reach=safe_float(reach)
         )
-
-    # ------------------------------------
-
-    def _safe(self, value):
-
-        if pd.isna(value):
-
-            return 0.0
-
-        return float(value)

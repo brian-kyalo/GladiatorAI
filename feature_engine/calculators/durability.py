@@ -16,6 +16,8 @@ from feature_engine.models import DurabilityStats
 
 from feature_engine.constants import TOTAL_FIGHT_TIME
 
+from feature_engine.core import safe_float
+
 
 class DurabilityEngine:
     """
@@ -31,7 +33,7 @@ class DurabilityEngine:
         if history.empty:
             return DurabilityStats()
 
-        average_fight_time = float(
+        average_fight_time = safe_float(
 
             history[
                 TOTAL_FIGHT_TIME

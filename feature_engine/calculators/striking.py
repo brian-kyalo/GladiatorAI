@@ -1,24 +1,39 @@
 """
 GladiatorAI Striking Engine
 
-Builds striking statistics from the
+Retrieves striking statistics from the
 latest historical snapshot available
 before the snapshot date.
+
+Features
+--------
+- Average Significant Strikes
+- Strike Accuracy
 """
 
 from __future__ import annotations
 
 import pandas as pd
 
-from feature_engine.constants import *
+from feature_engine.constants import (
+    R_SIG_STR,
+    B_SIG_STR,
+    R_SIG_ACC,
+    B_SIG_ACC,
+)
 
 from feature_engine.models import StrikingStats
+
+from feature_engine.core import (
+    latest_snapshot,
+    safe_float,
+)
 
 
 class StrikingEngine:
     """
     Retrieves offensive striking statistics
-    from the latest historical fight.
+    from the latest historical snapshot.
     """
 
     def build(
@@ -26,52 +41,45 @@ class StrikingEngine:
         history: pd.DataFrame,
         fighter: str
     ) -> StrikingStats:
+        """
+        Builds the fighter's striking profile.
+        """
 
         if history.empty:
             return StrikingStats()
 
-        latest = history.iloc[0]
+        latest, corner = latest_snapshot(
+            history,
+            fighter
+        )
 
-        if latest[R_FIGHTER] == fighter:
+        if corner == "Red":
 
-            avg_sig_strikes = latest.get(
-                R_SIG_STR,
-                0
-            )
+            average_sig_strikes = latest[
+                R_SIG_STR
+            ]
 
-            strike_accuracy = latest.get(
-                R_SIG_ACC,
-                0
-            )
+            strike_accuracy = latest[
+                R_SIG_ACC
+            ]
 
         else:
 
-            avg_sig_strikes = latest.get(
-                B_SIG_STR,
-                0
-            )
+            average_sig_strikes = latest[
+                B_SIG_STR
+            ]
 
-            strike_accuracy = latest.get(
-                B_SIG_ACC,
-                0
-            )
+            strike_accuracy = latest[
+                B_SIG_ACC
+            ]
 
         return StrikingStats(
 
-            average_sig_strikes=self._safe(
-                avg_sig_strikes
+            average_sig_strikes=safe_float(
+                average_sig_strikes
             ),
 
-            strike_accuracy=self._safe(
+            strike_accuracy=safe_float(
                 strike_accuracy
             )
         )
-
-    # -----------------------------------
-
-    def _safe(self, value):
-
-        if pd.isna(value):
-            return 0.0
-
-        return float(value)
