@@ -1,82 +1,63 @@
 """
-GladiatorAI Matchup Engine
+GladiatorAI Matchup Engine 
 
 Compares two PreFightProfiles and produces
 a MatchupProfile ready for machine learning.
 
-The Matchup Engine NEVER knows anything about
-the UFC dataset.
+The Matchup Engine does not calculate fighter
+statistics itself.
 
-Its only job is:
+Its responsibility is:
 
-Profile A
-        vs
-Profile B
+    PreFightProfile
+            +
+    PreFightProfile
+            ↓
+      MatchupProfile
 
-↓
-
-MatchupProfile
 """
 
+from __future__ import annotations
+
 from dataclasses import asdict
+
 import pandas as pd
 
 from feature_engine.models import PreFightProfile
 from feature_engine.matchup_models import MatchupProfile
 
-from feature_engine.comparison import (
-    difference,
-    absolute_difference,
-    normalized_difference,
-)
+from feature_engine.comparison import difference
 
-
-class MatchupEngine:
+class MatchupEngine: 
     """
-    Compares two PreFightProfiles.
+    Compares two pre-fight fighter profiles.
 
-    The Red profile is always treated as
-    Fighter A.
-
-    The Blue profile is always treated as
-    Fighter B.
+    Red and Blue are kept in their original
+    UFC corner orientation.
     """
-
-    def __init__(self):
-        pass
-
-    # =====================================================
-    # BUILD MATCHUP
-    # =====================================================
 
     def compare(
-        self,
-        red_profile: PreFightProfile,
-        blue_profile: PreFightProfile,
-        winner: str
-    ) -> MatchupProfile:
+            self,
+            red_profile: PreFightProfile,
+            blue_profile: PreFightProfile,
+            winner: str,
+
+    ) -> MatchupProfile: 
         """
-        Creates one matchup.
+        Compare two pre-fight profiles 
 
-        Parameters
-        ----------
-        red_profile
+        All features are rep as:
 
-        blue_profile
+             Red value - Blue value 
 
-        winner
-            "Red" or "Blue"
-
-        Returns
-        -------
-        MatchupProfile
+        The winner is kept separately as the
+        supervised-learning target.
         """
 
-        matchup = MatchupProfile(
-
-            # -------------------------------------
+        return MatchupProfile(
+            # ---------------------------------------------
             # Metadata
-            # -------------------------------------
+            # ---------------------------------------------
 
             red_fighter=red_profile.fighter,
 
@@ -88,380 +69,236 @@ class MatchupEngine:
 
             winner=winner,
 
-            # -------------------------------------
+            # ---------------------------------------------
             # Physical
-            # -------------------------------------
+            # ---------------------------------------------
 
-            age_diff=0.0,
+            age_diff=difference(
+                red_profile.physical.age,
+                blue_profile.physical.age,
+            ),
 
-            height_diff=0.0,
+            height_diff=difference(
+                red_profile.physical.height,
+                blue_profile.physical.height,
+            ),
 
-            reach_diff=0.0,
+            reach_diff=difference(
+                red_profile.physical.reach,
+                blue_profile.physical.reach,
+            ),
 
-            # -------------------------------------
-            # Experience
-            # -------------------------------------
+            # ---------------------------------------------
+            # Record / Experience
+            # ---------------------------------------------
 
             experience_diff=difference(
-
-                red_profile.experience_score,
-
-                blue_profile.experience_score
-
+                red_profile.record.total_fights,
+                blue_profile.record.total_fights,
             ),
 
             wins_diff=difference(
-
-                red_profile.wins,
-
-                blue_profile.wins
-
+                red_profile.record.wins,
+                blue_profile.record.wins,
             ),
 
             losses_diff=difference(
-
-                red_profile.losses,
-
-                blue_profile.losses
-
+                red_profile.record.losses,
+                blue_profile.record.losses,
             ),
 
             win_rate_diff=difference(
-
-                red_profile.win_rate,
-
-                blue_profile.win_rate
-
+                red_profile.record.win_rate,
+                blue_profile.record.win_rate,
             ),
 
-            # -------------------------------------
+            # ---------------------------------------------
             # Momentum
-            # -------------------------------------
+            # ---------------------------------------------
 
             win_streak_diff=difference(
-
-                red_profile.current_win_streak,
-
-                blue_profile.current_win_streak
-
+                red_profile.momentum.current_win_streak,
+                blue_profile.momentum.current_win_streak,
             ),
 
             lose_streak_diff=difference(
-
-                red_profile.current_lose_streak,
-
-                blue_profile.current_lose_streak
-
+                red_profile.momentum.current_lose_streak,
+                blue_profile.momentum.current_lose_streak,
             ),
 
             momentum_diff=difference(
-
-                red_profile.momentum_score,
-
-                blue_profile.momentum_score
-
+                red_profile.momentum.momentum_score,
+                blue_profile.momentum.momentum_score,
             ),
 
-            # -------------------------------------
+            # ---------------------------------------------
             # Finishing
-            # -------------------------------------
+            # ---------------------------------------------
 
             ko_rate_diff=difference(
-
-                red_profile.ko_rate,
-
-                blue_profile.ko_rate
-
+                red_profile.finishing.ko_rate,
+                blue_profile.finishing.ko_rate,
             ),
 
             submission_rate_diff=difference(
-
-                red_profile.submission_rate,
-
-                blue_profile.submission_rate
-
+                red_profile.finishing.submission_rate,
+                blue_profile.finishing.submission_rate,
             ),
 
             decision_rate_diff=difference(
-
-                red_profile.decision_rate,
-
-                blue_profile.decision_rate
-
+                red_profile.finishing.decision_rate,
+                blue_profile.finishing.decision_rate,
             ),
 
-            # -------------------------------------
-            # Performance
-            # -------------------------------------
+            # ---------------------------------------------
+            # Striking
+            # ---------------------------------------------
 
             fight_time_diff=difference(
-
-                red_profile.average_fight_time,
-
-                blue_profile.average_fight_time
-
+                red_profile.durability.average_fight_time,
+                blue_profile.durability.average_fight_time,
             ),
 
             sig_strike_diff=difference(
-
-                red_profile.average_sig_strikes,
-
-                blue_profile.average_sig_strikes
-
+                red_profile.striking.average_sig_strikes,
+                blue_profile.striking.average_sig_strikes,
             ),
 
+            # ---------------------------------------------
+            # Grappling
+            # ---------------------------------------------
+
             takedown_diff=difference(
-
-                red_profile.average_takedowns,
-
-                blue_profile.average_takedowns
-
+                red_profile.grappling.average_takedowns,
+                blue_profile.grappling.average_takedowns,
             ),
 
             submission_attempt_diff=difference(
-
-                red_profile.average_submissions,
-
-                blue_profile.average_submissions
-
-            )
-
+                red_profile.grappling.average_submission_attempts,
+                blue_profile.grappling.average_submission_attempts,
+            ),
         )
 
-        return matchup
-
     # =====================================================
-    # CONVERT TO DICTIONARY
+    # CONVERSION HELPERS
     # =====================================================
 
     @staticmethod
     def to_dict(
-        matchup: MatchupProfile
+        matchup: MatchupProfile,
     ) -> dict:
         """
-        Converts MatchupProfile into
-        a Python dictionary.
+        Convert a MatchupProfile into
+        a standard Python dictionary.
         """
 
         return asdict(matchup)
 
-    # =====================================================
-    # CONVERT TO DATAFRAME
-    # =====================================================
-
     @staticmethod
     def to_dataframe(
-        matchup: MatchupProfile
+        matchup: MatchupProfile,
     ) -> pd.DataFrame:
         """
-        Converts one matchup into
-        a single-row dataframe.
+        Convert one MatchupProfile into
+        a one-row DataFrame.
         """
 
         return pd.DataFrame(
-
             [asdict(matchup)]
-
         )
 
     # =====================================================
-    # PRINT SCOUT CARD
+    # SCOUT CARD
     # =====================================================
 
     @staticmethod
     def scout_card(
-        matchup: MatchupProfile
-    ):
+        matchup: MatchupProfile,
+    ) -> None:
         """
-        Prints an easy-to-read
-        comparison card.
-
-        Useful for debugging and
-        manual inspection.
+        Display a human-readable matchup
+        summary for inspection.
         """
 
         print()
-
         print("=" * 60)
-
         print("GLADIATOR AI MATCHUP")
-
         print("=" * 60)
 
         print()
-
-        print(
-
-            f"{matchup.red_fighter}"
-
-            "\n"
-
-            "vs"
-
-            "\n"
-
-            f"{matchup.blue_fighter}"
-
-        )
+        print(matchup.red_fighter)
+        print("vs")
+        print(matchup.blue_fighter)
 
         print()
-
+        print("-" * 60)
+        print("PHYSICAL")
         print("-" * 60)
 
+        print("Age Difference:", matchup.age_diff)
+        print("Height Difference:", matchup.height_diff)
+        print("Reach Difference:", matchup.reach_diff)
+
+        print()
+        print("-" * 60)
         print("EXPERIENCE")
-
         print("-" * 60)
 
-        print(
-
-            "Difference:",
-
-            matchup.experience_diff
-
-        )
+        print("Experience Difference:", matchup.experience_diff)
+        print("Wins Difference:", matchup.wins_diff)
+        print("Losses Difference:", matchup.losses_diff)
+        print("Win Rate Difference:", matchup.win_rate_diff)
 
         print()
-
-        print("RECORD")
-
-        print(
-
-            "Win Rate:",
-
-            matchup.win_rate_diff
-
-        )
-
-        print(
-
-            "Wins:",
-
-            matchup.wins_diff
-
-        )
-
-        print(
-
-            "Losses:",
-
-            matchup.losses_diff
-
-        )
-
-        print()
-
         print("-" * 60)
-
         print("MOMENTUM")
-
         print("-" * 60)
 
-        print(
-
-            "Win Streak:",
-
-            matchup.win_streak_diff
-
-        )
-
-        print(
-
-            "Lose Streak:",
-
-            matchup.lose_streak_diff
-
-        )
-
-        print(
-
-            "Momentum:",
-
-            matchup.momentum_diff
-
-        )
+        print("Win Streak Difference:", matchup.win_streak_diff)
+        print("Lose Streak Difference:", matchup.lose_streak_diff)
+        print("Momentum Difference:", matchup.momentum_diff)
 
         print()
-
         print("-" * 60)
-
         print("FINISHING")
-
         print("-" * 60)
 
+        print("KO Rate Difference:", matchup.ko_rate_diff)
         print(
-
-            "KO Rate:",
-
-            matchup.ko_rate_diff
-
+            "Submission Rate Difference:",
+            matchup.submission_rate_diff,
         )
-
         print(
-
-            "Submission Rate:",
-
-            matchup.submission_rate_diff
-
-        )
-
-        print(
-
-            "Decision Rate:",
-
-            matchup.decision_rate_diff
-
+            "Decision Rate Difference:",
+            matchup.decision_rate_diff,
         )
 
         print()
-
         print("-" * 60)
-
         print("PERFORMANCE")
-
         print("-" * 60)
 
         print(
-
-            "Fight Time:",
-
-            matchup.fight_time_diff
-
+            "Fight Time Difference:",
+            matchup.fight_time_diff,
         )
 
         print(
-
-            "Significant Strikes:",
-
-            matchup.sig_strike_diff
-
+            "Significant Strike Difference:",
+            matchup.sig_strike_diff,
         )
 
         print(
-
-            "Takedowns:",
-
-            matchup.takedown_diff
-
+            "Takedown Difference:",
+            matchup.takedown_diff,
         )
 
         print(
-
-            "Submission Attempts:",
-
-            matchup.submission_attempt_diff
-
+            "Submission Attempt Difference:",
+            matchup.submission_attempt_diff,
         )
 
         print()
-
         print("=" * 60)
-
-        print(
-
-            "Historical Winner:",
-
-            matchup.winner
-
-        )
-
+        print("Historical Winner:", matchup.winner)
         print("=" * 60)

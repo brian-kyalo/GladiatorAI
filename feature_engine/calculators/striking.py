@@ -2,8 +2,7 @@
 GladiatorAI Striking Engine
 
 Retrieves striking statistics from the
-latest historical snapshot available
-before the snapshot date.
+latest valid pre-fight snapshot.
 
 Features
 --------
@@ -25,61 +24,44 @@ from feature_engine.constants import (
 from feature_engine.models import StrikingStats
 
 from feature_engine.core import (
-    latest_snapshot,
+    snapshot_value,
     safe_float,
 )
 
 
 class StrikingEngine:
     """
-    Retrieves offensive striking statistics
-    from the latest historical snapshot.
+    Retrieves offensive striking statistics.
     """
 
     def build(
         self,
         history: pd.DataFrame,
-        fighter: str
+        fighter: str,
+        fallback_fight: pd.Series | None = None,
     ) -> StrikingStats:
-        """
-        Builds the fighter's striking profile.
-        """
 
-        if history.empty:
-            return StrikingStats()
-
-        latest, corner = latest_snapshot(
-            history,
-            fighter
+        average_sig_strikes = snapshot_value(
+            history=history,
+            fighter=fighter,
+            red_column=R_SIG_STR,
+            blue_column=B_SIG_STR,
+            fallback_fight=fallback_fight,
         )
 
-        if corner == "Red":
-
-            average_sig_strikes = latest[
-                R_SIG_STR
-            ]
-
-            strike_accuracy = latest[
-                R_SIG_ACC
-            ]
-
-        else:
-
-            average_sig_strikes = latest[
-                B_SIG_STR
-            ]
-
-            strike_accuracy = latest[
-                B_SIG_ACC
-            ]
+        strike_accuracy = snapshot_value(
+            history=history,
+            fighter=fighter,
+            red_column=R_SIG_ACC,
+            blue_column=B_SIG_ACC,
+            fallback_fight=fallback_fight,
+        )
 
         return StrikingStats(
-
             average_sig_strikes=safe_float(
                 average_sig_strikes
             ),
-
             strike_accuracy=safe_float(
                 strike_accuracy
-            )
+            ),
         )
