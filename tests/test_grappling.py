@@ -1,6 +1,6 @@
 """
 Tests for GrapplingEngine.
-"""
+""" 
 
 from feature_engine.calculators import GrapplingEngine
 

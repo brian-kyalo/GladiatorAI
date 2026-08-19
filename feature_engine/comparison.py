@@ -1,123 +1,49 @@
 """
 GladiatorAI Comparison Utilities
 
-Small reusable mathematical
-comparison functions.
+Compares individual fighter features while
+preserving missing information.
 
-Every comparison performed inside
-the Matchup Engine should come
-through this file.
+Important:
+    Unknown != zero.
+
+When either side of a comparison is missing,
+the resulting difference is NaN.
 """
+
+from __future__ import annotations
 
 import math
 
 
-# =====================================================
-# BASIC DIFFERENCE
-# =====================================================
-
-def difference(red, blue):
+def difference(
+    red_value,
+    blue_value,
+) -> float:
     """
-    Returns
+    Calculate:
 
-    Red - Blue
+        Red - Blue
 
-    Example
+    If either value is missing, return NaN.
 
-    15 - 10 = 5
+    This prevents missing physical/statistical
+    measurements from becoming fake advantages.
     """
 
-    return round(red - blue, 3)
+    if red_value is None or blue_value is None:
+        return float("nan")
 
+    try:
+        red = float(red_value)
+        blue = float(blue_value)
+    except (TypeError, ValueError):
+        return float("nan")
 
-# =====================================================
-# ABSOLUTE DIFFERENCE
-# =====================================================
+    if not math.isfinite(red):
+        return float("nan")
 
-def absolute_difference(red, blue):
+    if not math.isfinite(blue):
+        return float("nan")
 
-    return round(abs(red - blue), 3)
-
-
-# =====================================================
-# SAFE RATIO
-# =====================================================
-
-def ratio(red, blue):
-
-    if blue == 0:
-
-        return 0.0
-
-    return round(red / blue, 3)
-
-
-# =====================================================
-# PERCENT DIFFERENCE
-# =====================================================
-
-def percent_difference(red, blue):
-
-    if red == blue:
-
-        return 0.0
-
-    denominator = (red + blue) / 2
-
-    if denominator == 0:
-
-        return 0.0
-
-    return round(
-
-        ((red - blue) / denominator) * 100,
-
-        3
-
-    )
-
-
-# =====================================================
-# NORMALIZED DIFFERENCE
-# =====================================================
-
-def normalized_difference(red, blue):
-
-    denominator = max(
-
-        abs(red),
-
-        abs(blue),
-
-        1
-
-    )
-
-    return round(
-
-        (red - blue) / denominator,
-
-        3
-
-    )
-
-
-# =====================================================
-# SAFE LOG DIFFERENCE
-# =====================================================
-
-def log_difference(red, blue):
-
-    red = max(red, 1)
-
-    blue = max(blue, 1)
-
-    return round(
-
-        math.log(red) -
-
-        math.log(blue),
-
-        3
-
-    )
+    return red - blue

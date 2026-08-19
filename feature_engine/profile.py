@@ -4,8 +4,8 @@ GladiatorAI Profile Engine
 Builds a complete PreFightProfile using
 all Feature Engineering calculators.
 
-This class is the public entry point for
-creating fighter profiles.
+The ProfileEngine orchestrates the calculators
+and does not calculate individual features itself.
 """
 
 from __future__ import annotations
@@ -28,14 +28,11 @@ from feature_engine.calculators import (
 
 class ProfileEngine:
     """
-    Builds a complete fighter profile
-    immediately before a given fight.
-
-    This class orchestrates all
-    calculator engines.
+    Builds a complete fighter profile immediately
+    before a specified fight.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
 
         self.record_engine = RecordEngine()
 
@@ -57,59 +54,95 @@ class ProfileEngine:
         self,
         history: pd.DataFrame,
         fighter: str,
-        snapshot_date
+        snapshot_date,
+        fallback_fight: pd.Series | None = None,
     ) -> PreFightProfile:
+        """
+        Build a complete pre-fight profile.
 
-        snapshot_date = pd.to_datetime(snapshot_date)
+        fallback_fight is used for fighters with
+        no previous UFC history, such as UFC debutants.
+        """
 
-        profile = PreFightProfile(
-
-            fighter=fighter,
-
-            snapshot_date=snapshot_date
-        )
-
-        # ---------------------------------
-        # Feature Groups
-        # ---------------------------------
-
-        profile.record = self.record_engine.build(
-            history,
-            fighter
-        )
-
-        profile.physical = self.physical_engine.build(
-            history,
-            fighter
-        )
-
-        profile.activity = self.activity_engine.build(
-            history,
+        snapshot_date = pd.to_datetime(
             snapshot_date
         )
 
-        profile.momentum = self.momentum_engine.build(
-            history,
-            fighter
+        profile = PreFightProfile(
+            fighter=fighter,
+            snapshot_date=snapshot_date,
         )
+
+        # =============================================
+        # RECORD
+        # =============================================
+
+        profile.record = self.record_engine.build(
+            history=history,
+            fighter=fighter,
+        )
+
+        # =============================================
+        # PHYSICAL
+        # =============================================
+
+        profile.physical = self.physical_engine.build(
+            history=history,
+            fighter=fighter,
+            fallback_fight=fallback_fight,
+        )
+
+        # =============================================
+        # ACTIVITY
+        # =============================================
+
+        profile.activity = self.activity_engine.build(
+            history=history,
+            snapshot_date=snapshot_date,
+        )
+
+        # =============================================
+        # MOMENTUM
+        # =============================================
+
+        profile.momentum = self.momentum_engine.build(
+            history=history,
+            fighter=fighter,
+        )
+
+        # =============================================
+        # FINISHING
+        # =============================================
 
         profile.finishing = self.finishing_engine.build(
-            history,
-            fighter
+            history=history,
+            fighter=fighter,
         )
+
+        # =============================================
+        # STRIKING
+        # =============================================
 
         profile.striking = self.striking_engine.build(
-            history,
-            fighter
+            history=history,
+            fighter=fighter,
         )
+
+        # =============================================
+        # GRAPPLING
+        # =============================================
 
         profile.grappling = self.grappling_engine.build(
-            history,
-            fighter
+            history=history,
+            fighter=fighter,
         )
 
+        # =============================================
+        # DURABILITY
+        # =============================================
+
         profile.durability = self.durability_engine.build(
-            history
+            history=history
         )
 
         return profile

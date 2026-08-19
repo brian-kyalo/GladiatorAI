@@ -1,9 +1,8 @@
 """
 GladiatorAI Grappling Engine
 
-Builds grappling statistics from the
-latest historical snapshot available
-before the snapshot date.
+Retrieves grappling statistics from the
+latest valid pre-fight snapshot.
 
 Features
 --------
@@ -28,62 +27,55 @@ from feature_engine.constants import (
 from feature_engine.models import GrapplingStats
 
 from feature_engine.core import (
-    latest_snapshot,
+    snapshot_value,
     safe_float,
 )
 
 
 class GrapplingEngine:
     """
-    Retrieves grappling statistics
-    from the latest historical snapshot.
+    Retrieves grappling statistics.
     """
 
     def build(
         self,
         history: pd.DataFrame,
-        fighter: str
+        fighter: str,
+        fallback_fight: pd.Series | None = None,
     ) -> GrapplingStats:
 
-        if history.empty:
-            return GrapplingStats()
-
-        latest, corner = latest_snapshot(
-            history,
-            fighter
+        average_takedowns = snapshot_value(
+            history=history,
+            fighter=fighter,
+            red_column=R_TD,
+            blue_column=B_TD,
+            fallback_fight=fallback_fight,
         )
 
-        if corner == "Red":
-            average_takedowns = latest[R_TD]
+        takedown_accuracy = snapshot_value(
+            history=history,
+            fighter=fighter,
+            red_column=R_TD_ACC,
+            blue_column=B_TD_ACC,
+            fallback_fight=fallback_fight,
+        )
 
-            takedown_accuracy = latest[R_TD_ACC]
-
-            average_submission_attempts = latest[R_SUB]
-
-        else:
-
-            average_takedowns = latest[
-                B_TD ]
-
-            takedown_accuracy = latest[
-                B_TD_ACC ]
-
-            average_submission_attempts = latest[
-                B_SUB ]
+        average_submission_attempts = snapshot_value(
+            history=history,
+            fighter=fighter,
+            red_column=R_SUB,
+            blue_column=B_SUB,
+            fallback_fight=fallback_fight,
+        )
 
         return GrapplingStats(
-
             average_takedowns=safe_float(
                 average_takedowns
             ),
-
             takedown_accuracy=safe_float(
                 takedown_accuracy
             ),
-
             average_submission_attempts=safe_float(
                 average_submission_attempts
-            )
+            ),
         )
-
-   
